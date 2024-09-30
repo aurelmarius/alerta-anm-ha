@@ -60,5 +60,5 @@ action:
 mode: single
 ```
 
-![Preview](https://raw.githubusercontent.com/aurelmarius/alerta-anm-ha/refs/heads/main/IMG_PREV.png)
+![Preview](https://raw.githubusercontent.com/aurelmarius/alerta-anm-ha/refs/heads/main/.github/img/IMG_PREV.png)
 
