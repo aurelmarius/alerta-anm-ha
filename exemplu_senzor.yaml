@@ -1,0 +1,248 @@
+sensor:
+  - platform: template
+    sensors:
+      avertizare_meteo_bucuresti:
+        friendly_name: "Avertizare Meteo București"
+        value_template: >-
+          {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+          {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+          {% if avertizari %}
+            {%- for avertizare in avertizari %}
+              {% if avertizare.judet == 'B' %}
+                alerta
+                {% break %}
+                {% else %}
+                liniste
+                {% break %}
+              {% endif %}
+            {%- endfor -%}
+          {% else %}
+            liniste
+          {% endif %}
+        attribute_templates:
+          mesaj: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+              {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+              {% if avertizari %}
+                {%- for avertizare in avertizari %}
+                  {% if avertizare.judet == 'B' %}
+                    {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                    {%- set interval = avertizare.intervalul.split('–') -%}
+                    {%- set inceput = interval[0].strip() -%}
+                    {%- set sfarsit = interval[1].strip().replace(';', '') -%}
+                    {%- set zi_inceput = inceput.split(', ')[0].split(' ')[0] -%}
+                    {%- set luna_inceput = luni.get(inceput.split(', ')[0].split(' ')[1], None) -%}
+                    {%- set ora_inceput = inceput.split(', ')[1].replace('ora ', '').strip() -%}
+                    {%- set zi_sfarsit = sfarsit.split(', ')[0].split(' ')[0] -%}
+                    {%- set luna_sfarsit = luni.get(sfarsit.split(', ')[0].split(' ')[1], None) -%}
+                    {%- set ora_sfarsit = sfarsit.split(', ')[1].replace('ora ', '').strip() -%}
+                    {% if luna_inceput and luna_sfarsit and ora_inceput and ora_sfarsit %}
+                      {%- set an_curent = now().year -%}
+                      {%- set data_inceput_str = an_curent ~ '-' ~ luna_inceput ~ '-' ~ zi_inceput ~ 'T' ~ ora_inceput ~ ':00' -%}
+                      {%- set data_sfarsit_str = an_curent ~ '-' ~ luna_sfarsit ~ '-' ~ zi_sfarsit ~ 'T' ~ ora_sfarsit ~ ':00' -%}
+                      {%- set data_inceput_dt = as_datetime(data_inceput_str) -%}
+                      {%- set data_sfarsit_dt = as_datetime(data_sfarsit_str) -%}
+                      {%- set azi = now().date() -%}
+                      {%- set maine = (now() + timedelta(days=1)).date() -%}
+                      {%- if data_inceput_dt.date() == azi -%}
+                        Avertizare cod {{ culoare }} pentru București începând de azi, ora {{ data_inceput_dt.strftime('%H:%M ') }}
+                      {%- elif data_inceput_dt.date() == maine -%}
+                        Avertizare cod {{ culoare }} pentru București începând de mâine, ora {{ data_inceput_dt.strftime('%H:%M ') }}
+                      {%- else -%}
+                        Avertizare cod {{ culoare }} pentru București începând de {{ data_inceput_dt.strftime('%d %B') }}, ora {{ data_inceput_dt.strftime('%H:%M ') }}
+                      {%- endif -%}
+                      {%- if data_sfarsit_dt.date() == azi -%}
+                        până azi, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
+                      {%- elif data_sfarsit_dt.date() == maine -%}
+                        până mâine, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
+                      {%- else -%}
+                        până la {{ data_sfarsit_dt.strftime('%d %B') }}, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
+                      {%- endif %}
+                    {% else %}
+                      Datele de început sau sfârșit nu sunt valide.
+                    {% endif %}
+                    {% break %}
+                  {% else %} nici un mesaj {% break %}
+                  {% endif %}
+                {%- endfor -%}
+              {% else %}
+                Nicio avertizare detectată.
+              {% endif %}
+
+          fenomene_vizate: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+            {% set prima_avertizare_gasita = false %}
+            {% if avertizari %}
+              {%- for avertizare in avertizari %}
+                {% if avertizare.judet == 'B' %}
+                  {% set mesaj_html = avertizare.mesaj %}
+                  {% set mesaj_curat = mesaj_html | regex_replace('<[^>]+>', '') %}
+                  {% set mesaj_curat = mesaj_curat
+                      | replace('&ndash;', '-') 
+                      | replace('&icirc;', 'î')
+                      | replace('&acirc;', 'â')
+                      | replace('&Icirc;', 'Î')
+                      | replace('&Acirc;', 'Â')
+                      | replace('&nbsp;', ' ')
+                      | replace('&quot;', '"')
+                      | replace('&lt;', '<')
+                      | replace('&gt;', '>')
+                      | replace('&amp;', '&')
+                      | replace('&rsquo;', '’')
+                      | replace('&lsquo;', '‘')
+                      | replace('&euro;', '€')
+                      | replace('&hellip;', '...')
+                  %}
+                  {% set fenomene = mesaj_curat | regex_findall('Fenomene vizate: ([^Z]+)') %}
+                  {{ fenomene | join(', ') }}
+                  {% break %}
+                {% else %} nici o avertizare {% break %}
+                {% endif %}
+              {%- endfor -%}
+            {% else %}
+              Nicio avertizare detectată.
+            {% endif %}
+
+          data_inceput: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+                {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+                {% if avertizari %}
+                  {%- for avertizare in avertizari %}
+                    {% if avertizare.judet == 'B' %}
+                      {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                      {%- set interval = avertizare.intervalul.split('–') -%}
+                      {%- set inceput = interval[0].strip() -%}
+                      {%- set sfarsit = interval[1].strip().replace(';', '') -%}
+                      {%- set zi_inceput = inceput.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_inceput = luni.get(inceput.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_inceput = inceput.split(', ')[1].replace('ora ', '').strip() -%}
+                      {%- set zi_sfarsit = sfarsit.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_sfarsit = luni.get(sfarsit.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_sfarsit = sfarsit.split(', ')[1].replace('ora ', '').strip() -%}
+                      {% if luna_inceput and luna_sfarsit and ora_inceput and ora_sfarsit %}
+                        {%- set an_curent = now().year -%}
+                        {%- set data_inceput_str = an_curent ~ '-' ~ luna_inceput ~ '-' ~ zi_inceput ~ 'T' ~ ora_inceput ~ ':00' -%}
+                        {%- set data_inceput_dt = as_datetime(data_inceput_str) -%}
+                        {{ data_inceput_dt.strftime('%A %B %-d, %I:%M %p') }}
+                      {% else %}
+                        Datele de început sau sfârșit nu sunt valide.
+                      {% endif %}
+                      {% break %}
+                    {% else %} null {% break %}
+                    {% endif %}
+                  {%- endfor -%}
+                {% else %}
+                  Nicio avertizare detectată.
+                {% endif %}
+
+          data_inceput_iso: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+                {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+                {% if avertizari %}
+                  {%- for avertizare in avertizari %}
+                    {% if avertizare.judet == 'B' %}
+                      {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                      {%- set interval = avertizare.intervalul.split('–') -%}
+                      {%- set inceput = interval[0].strip() -%}
+                      {%- set sfarsit = interval[1].strip().replace(';', '') -%}
+                      {%- set zi_inceput = inceput.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_inceput = luni.get(inceput.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_inceput = inceput.split(', ')[1].replace('ora ', '').strip() -%}
+                      {%- set zi_sfarsit = sfarsit.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_sfarsit = luni.get(sfarsit.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_sfarsit = sfarsit.split(', ')[1].replace('ora ', '').strip() -%}
+                      {% if luna_inceput and luna_sfarsit and ora_inceput and ora_sfarsit %}
+                        {%- set an_curent = now().year -%}
+                        {%- set data_inceput_str = an_curent ~ '-' ~ luna_inceput ~ '-' ~ zi_inceput ~ 'T' ~ ora_inceput ~ ':00' -%}
+                        {%- set data_inceput_dt = as_datetime(data_inceput_str) -%}
+                        {{ data_inceput_dt.isoformat() }}
+                      {% else %}
+                        Datele de început sau sfârșit nu sunt valide.
+                      {% endif %}
+                      {% break %}
+                    {% else %} null {% break %}
+                    {% endif %}
+                  {%- endfor -%}
+                {% else %}
+                  Nicio avertizare detectată.
+                {% endif %}
+
+          data_sfarsit: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+                {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+                {% if avertizari %}
+                  {%- for avertizare in avertizari %}
+                    {% if avertizare.judet == 'B' %}
+                      {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                      {%- set interval = avertizare.intervalul.split('–') -%}
+                      {%- set inceput = interval[0].strip() -%}
+                      {%- set sfarsit = interval[1].strip().replace(';', '') -%}
+                      {%- set zi_inceput = inceput.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_inceput = luni.get(inceput.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_inceput = inceput.split(', ')[1].replace('ora ', '').strip() -%}
+                      {%- set zi_sfarsit = sfarsit.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_sfarsit = luni.get(sfarsit.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_sfarsit = sfarsit.split(', ')[1].replace('ora ', '').strip() -%}
+                      {% if luna_inceput and luna_sfarsit and ora_inceput and ora_sfarsit %}
+                        {%- set an_curent = now().year -%}
+                        {%- set data_sfarsit_str = an_curent ~ '-' ~ luna_sfarsit ~ '-' ~ zi_sfarsit ~ 'T' ~ ora_sfarsit ~ ':00' -%}
+                        {%- set data_sfarsit_dt = as_datetime(data_sfarsit_str) -%}
+                        {{ data_sfarsit_dt.strftime('%A %B %-d, %I:%M %p') }}
+                      {% else %}
+                        Datele de început sau sfârșit nu sunt valide.
+                      {% endif %}
+                      {% break %}
+                    {% else %} null {% break %}
+                    {% endif %}
+                  {%- endfor -%}
+                {% else %}
+                  Nicio avertizare detectată.
+                {% endif %}
+
+          data_sfarsit_iso: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+                {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+                {% if avertizari %}
+                  {%- for avertizare in avertizari %}
+                    {% if avertizare.judet == 'B' %}
+                      {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                      {%- set interval = avertizare.intervalul.split('–') -%}
+                      {%- set inceput = interval[0].strip() -%}
+                      {%- set sfarsit = interval[1].strip().replace(';', '') -%}
+                      {%- set zi_inceput = inceput.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_inceput = luni.get(inceput.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_inceput = inceput.split(', ')[1].replace('ora ', '').strip() -%}
+                      {%- set zi_sfarsit = sfarsit.split(', ')[0].split(' ')[0] -%}
+                      {%- set luna_sfarsit = luni.get(sfarsit.split(', ')[0].split(' ')[1], None) -%}
+                      {%- set ora_sfarsit = sfarsit.split(', ')[1].replace('ora ', '').strip() -%}
+                      {% if luna_inceput and luna_sfarsit and ora_inceput and ora_sfarsit %}
+                        {%- set an_curent = now().year -%}
+                        {%- set data_sfarsit_str = an_curent ~ '-' ~ luna_sfarsit ~ '-' ~ zi_sfarsit ~ 'T' ~ ora_sfarsit ~ ':00' -%}
+                        {%- set data_sfarsit_dt = as_datetime(data_sfarsit_str) -%}
+                        {{ data_sfarsit_dt.isoformat() }}
+                      {% else %}
+                        Datele de început sau sfârșit nu sunt valide.
+                      {% endif %}
+                      {% break %}
+                    {% else %} null {% break %}
+                    {% endif %}
+                  {%- endfor -%}
+                {% else %}
+                  Nicio avertizare detectată.
+                {% endif %}
+
+          tip_cod: >
+            {% set avertizari = state_attr('sensor.avertizari_meteo_anm', 'avertizari') %}
+                {% set luni = {'ianuarie':'01', 'februarie':'02', 'martie':'03', 'aprilie':'04', 'mai':'05', 'iunie':'06', 'iulie':'07', 'august':'08', 'septembrie':'09', 'octombrie':'10', 'noiembrie':'11', 'decembrie':'12'} %}
+                {% if avertizari %}
+                  {%- for avertizare in avertizari %}
+                    {% if avertizare.judet == 'B' %}
+                    {%- set culoare = 'Galben' if avertizare.culoare == '1' else 'Portocaliu' if avertizare.culoare == '2' else 'Rosu' -%}
+                      {{ culoare }}
+                      {% break %}
+                    {% else %} null {% break %}
+                    {% endif %}
+                  {%- endfor -%}
+                {% else %}
+                  Nicio avertizare detectată.
+                {% endif %}
