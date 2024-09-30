@@ -1,7 +1,8 @@
 # Atentionare meteorologica ANM Home Assistant
 
 1. Despre
-   Integrarea foloseste API ANM de pe site-ul https://www.meteoromania.ro/ pentru a prelua atentionarile meteorologice si le stocheaza in senzorul sensor.avertizari_meteo_anm. Datele sunt stocate ca si atribut al senzorului.
+
+Integrarea foloseste API ANM de pe site-ul https://www.meteoromania.ro/ pentru a prelua atentionarile meteorologice si le stocheaza in senzorul sensor.avertizari_meteo_anm. Datele sunt stocate ca si atribut al senzorului.
 
 Exemplu:
 
