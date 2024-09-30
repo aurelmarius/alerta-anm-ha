@@ -27,10 +27,10 @@ Atributul culoare: 1 - cod Galben, 2 - cod Portocaliu, 3 - cod Rosu
 
 Exemplu:
 
-	{% if avertizare.judet == 'B' %} - pentru Bucuresti
-	{% if avertizare.judet == 'GL' %} - pentru Galati
- 	{% if avertizare.judet == 'TM' %} - pentru Timisoara
-	etc...
+	{% set judet = 'B' %} - Bucuresti
+ 	{% set judet = 'GL' %} - Galati
+  	{% set judet = 'IS' %} - Iasi
+   	etc...
 
  Este necesar sa inlocuiti indicativul in toate atributele senzorului.
 
