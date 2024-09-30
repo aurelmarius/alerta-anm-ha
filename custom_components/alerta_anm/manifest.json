@@ -1,0 +1,11 @@
+{
+  "domain": "alerta_anm",
+  "name": "Alerta ANM",
+  "documentation": "https://github.com/aurelmarius/alerta-anm-ha",
+  "version": "1.0.0",
+  "requirements": ["requests"],
+  "codeowners": ["@aurelmarius"],
+  "iot_class": "cloud_polling",
+  "config_flow": true,
+  "icon": "custom_components/alerta_anm/icon.png"
+}
