@@ -3,7 +3,7 @@ from datetime import timedelta
 import async_timeout
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.event import async_track_time_interval
-from homeassistant.helpers.aiohttp_client import async_get_clientsession  # Import direct al funcției
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,17 +53,21 @@ class ANMAlertSensor(Entity):
                     if response.status == 200:
                         data = await response.json()
                         toate_avertizarile = []
-                        for avertizare in data['avertizare']:
-                            for judet in avertizare['judet']:
-                                avertizare_judet = {
-                                    "judet": judet['@attributes']['cod'],
-                                    "culoare": judet['@attributes']['culoare'],
-                                    "fenomene_vizate": avertizare['@attributes']['fenomeneVizate'],
-                                    "data_expirarii": avertizare['@attributes']['dataExpirarii'],
-                                    "data_aparitiei": avertizare['@attributes']['dataAparitiei'],
-                                    "intervalul": avertizare['@attributes']['intervalul']
-                                }
-                                toate_avertizarile.append(avertizare_judet)
+                        for avertizare in data.get('avertizare', []):
+                            for judet in avertizare.get('judet', []):
+                                try:
+                                    avertizare_judet = {
+                                        "judet": judet['@attributes'].get('cod', 'necunoscut'),
+                                        "culoare": judet['@attributes'].get('culoare', 'necunoscut'),
+                                        "fenomene_vizate": avertizare['@attributes'].get('fenomeneVizate', 'necunoscut'),
+                                        "data_expirarii": avertizare['@attributes'].get('dataExpirarii', 'necunoscut'),
+                                        "data_aparitiei": avertizare['@attributes'].get('dataAparitiei', 'necunoscut'),
+                                        "intervalul": avertizare['@attributes'].get('intervalul', 'necunoscut'),
+                                        "mesaj": avertizare['@attributes'].get('mesaj', 'necunoscut')
+                                    }
+                                    toate_avertizarile.append(avertizare_judet)
+                                except KeyError as e:
+                                    _LOGGER.error(f"Eroare la procesarea datelor pentru județ: {e}")
                         self._state = "active" if toate_avertizarile else "inactive"
                         self._attributes = {
                             "avertizari": toate_avertizarile,
@@ -71,6 +75,6 @@ class ANMAlertSensor(Entity):
                         }
                         _LOGGER.info("Senzor ANM actualizat cu succes.")
                     else:
-                        _LOGGER.error(f"Erroare HTTP {response.status} la preluarea datelor ANM")
+                        _LOGGER.error(f"Eroare HTTP {response.status} la preluarea datelor ANM")
         except Exception as e:
             _LOGGER.error(f"Eroare la actualizarea datelor ANM: {e}")
