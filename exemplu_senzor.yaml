@@ -63,7 +63,12 @@ sensor:
             {% set alerta_jud = (avertizari | selectattr('judet', 'eq', judet) | selectattr('culoare', 'gt', '0') | list) %}
             {% if alerta_jud | length > 0 %}
               {% set avertizare = alerta_jud[0] %}
-              {{ avertizare.fenomene_vizate }}
+              {% set mesaj_html = avertizare.mesaj %}
+              {% set mesaj_curat = mesaj_html | regex_replace('<[^>]+>', '') %}
+              {% set mesaj_curat = mesaj_curat | replace('&ndash;', '-') | replace('&icirc;', 'î') | replace('&acirc;', 'â') | replace('&Icirc;', 'Î') | replace('&Acirc;', 'Â') | replace('&nbsp;', ' ') | replace('&quot;', '"') | replace('&lt;', '<') | replace('&gt;', '>') | replace('&amp;', '&') | replace('&rsquo;', '’') | replace('&lsquo;', '‘') | replace('&euro;', '€') | replace('&hellip;', '...') %}
+              {% set fenomene = mesaj_curat | regex_findall('Fenomene vizate: ([^Z]+)') %}
+              {% set fenomene = fenomene | join(', ') %}
+              {{ fenomene }}
             {% else %}
               Nicio avertizare detectată.
             {% endif %}
