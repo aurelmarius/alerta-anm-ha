@@ -52,27 +52,52 @@ class ANMAlertSensor(Entity):
                 async with session.get(JSON_URL) as response:
                     if response.status == 200:
                         data = await response.json()
+                        if not data or isinstance(data, str):
+                            _LOGGER.warning(f"Nu există date disponibile: {data}")
+                            self._state = "inactive"
+                            self._attributes = {
+                                "avertizari": "Nu exista avertizari",
+                                "friendly_name": "Avertizări Meteo ANM"
+                            }
+                            return
+                        
                         toate_avertizarile = []
                         for avertizare in data.get('avertizare', []):
-                            for judet in avertizare.get('judet', []):
-                                try:
-                                    avertizare_judet = {
-                                        "judet": judet['@attributes'].get('cod', 'necunoscut'),
-                                        "culoare": judet['@attributes'].get('culoare', 'necunoscut'),
-                                        "fenomene_vizate": avertizare['@attributes'].get('fenomeneVizate', 'necunoscut'),
-                                        "data_expirarii": avertizare['@attributes'].get('dataExpirarii', 'necunoscut'),
-                                        "data_aparitiei": avertizare['@attributes'].get('dataAparitiei', 'necunoscut'),
-                                        "intervalul": avertizare['@attributes'].get('intervalul', 'necunoscut'),
-                                        "mesaj": avertizare['@attributes'].get('mesaj', 'necunoscut')
-                                    }
-                                    toate_avertizarile.append(avertizare_judet)
-                                except KeyError as e:
-                                    _LOGGER.error(f"Eroare la procesarea datelor pentru județ: {e}")
-                        self._state = "active" if toate_avertizarile else "inactive"
-                        self._attributes = {
-                            "avertizari": toate_avertizarile,
-                            "friendly_name": "Avertizări Meteo ANM"
-                        }
+                            if isinstance(avertizare, dict):
+                                for judet in avertizare.get('judet', []):
+                                    if isinstance(judet, dict):
+                                        try:
+                                            avertizare_judet = {
+                                                "judet": judet.get('@attributes', {}).get('cod', 'necunoscut'),
+                                                "culoare": judet.get('@attributes', {}).get('culoare', 'necunoscut'),
+                                                "fenomene_vizate": avertizare.get('@attributes', {}).get('fenomeneVizate', 'necunoscut'),
+                                                "data_expirarii": avertizare.get('@attributes', {}).get('dataExpirarii', 'necunoscut'),
+                                                "data_aparitiei": avertizare.get('@attributes', {}).get('dataAparitiei', 'necunoscut'),
+                                                "intervalul": avertizare.get('@attributes', {}).get('intervalul', 'necunoscut'),
+                                                "mesaj": avertizare.get('@attributes', {}).get('mesaj', 'necunoscut')
+                                            }
+                                            toate_avertizarile.append(avertizare_judet)
+                                        except KeyError as e:
+                                            _LOGGER.error(f"Eroare la procesarea datelor pentru județ: {e}")
+                                    else:
+                                        _LOGGER.error("Judete nu este un dicționar, s-a primit: %s", type(judet))
+                                        _LOGGER.debug("Conținut judet: %s", judet)
+                            else:
+                                _LOGGER.error("Avertizare nu este un dicționar, s-a primit: %s", type(avertizare))
+                                _LOGGER.debug("Conținut avertizare: %s", avertizare)
+                        
+                        if toate_avertizarile:
+                            self._state = "active"
+                            self._attributes = {
+                                "avertizari": toate_avertizarile,
+                                "friendly_name": "Avertizări Meteo ANM"
+                            }
+                        else:
+                            self._state = "inactive"
+                            self._attributes = {
+                                "avertizari": "Nu exista avertizari",
+                                "friendly_name": "Avertizări Meteo ANM"
+                            }
                         _LOGGER.info("Senzor ANM actualizat cu succes.")
                     else:
                         _LOGGER.error(f"Eroare HTTP {response.status} la preluarea datelor ANM")
