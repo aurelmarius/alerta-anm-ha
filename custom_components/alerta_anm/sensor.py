@@ -19,7 +19,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     async_add_entities([sensor])
 
     # Actualizare la intervalul configurat
-    async_track_time_interval(hass, lambda now: hass.async_create_task(sensor.async_update()), timedelta(minutes=update_interval))
+    async_track_time_interval(hass, sensor.async_update, timedelta(minutes=update_interval))
 
 class ANMAlertSensor(Entity):
     def __init__(self, hass):
