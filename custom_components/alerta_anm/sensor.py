@@ -10,7 +10,6 @@ _LOGGER = logging.getLogger(__name__)
 JSON_URL = "https://www.meteoromania.ro/wp-json/meteoapi/v2/avertizari-generale"
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up the ANM sensor based on the config_entry."""
     # Intervalul de actualizare
     update_interval = config_entry.data.get("update_interval", 10)
 
