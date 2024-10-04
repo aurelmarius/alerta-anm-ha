@@ -36,26 +36,26 @@ sensor:
                 {% set data_sfarsit_dt = as_datetime(an_curent ~ '-' ~ luna_sfarsit ~ '-' ~ zi_sfarsit ~ 'T' ~ ora_sfarsit ~ ':00') %}
                 {% set azi = now().date() %}
                 {% set maine = (now() + timedelta(days=1)).date() %}
-                {% if data_inceput_dt.date() == azi %}
+                {% if data_inceput_dt.date() == azi -%}
                   Avertizare cod {{ culoare }} pentru București începând de azi, ora {{ data_inceput_dt.strftime('%H:%M') }}
-                {% elif data_inceput_dt.date() == maine %}
+                {%- elif data_inceput_dt.date() == maine -%}
                   Avertizare cod {{ culoare }} pentru București începând de mâine, ora {{ data_inceput_dt.strftime('%H:%M') }}
-                {% else %}
+                {%- else -%}
                   Avertizare cod {{ culoare }} pentru București începând de {{ data_inceput_dt.strftime('%d %B') }}, ora {{ data_inceput_dt.strftime('%H:%M') }}
-                {% endif %}
-                {% if data_sfarsit_dt.date() == azi %}
+                {%- endif %}
+                {%- if data_sfarsit_dt.date() == azi -%}
                   până azi, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
-                {% elif data_sfarsit_dt.date() == maine %}
+                {%- elif data_sfarsit_dt.date() == maine -%}
                   până mâine, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
-                {% else %}
+                {%- else -%}
                   până la {{ data_sfarsit_dt.strftime('%d %B') }}, ora {{ data_sfarsit_dt.strftime('%H:%M') }}
-                {% endif %}
-              {% else %}
+                {%- endif %}
+              {% else -%}
                 Datele de început sau sfârșit nu sunt valide.
-              {% endif %}
-            {% else %}
+              {%- endif %}
+            {% else -%}
               Nicio avertizare detectată.
-            {% endif %}
+            {%- endif %}
           
           fenomene_vizate: >-
             {% set judet = 'B' %}
