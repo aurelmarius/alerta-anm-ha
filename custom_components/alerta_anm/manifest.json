@@ -2,7 +2,7 @@
   "domain": "alerta_anm",
   "name": "Alerta ANM",
   "documentation": "https://github.com/aurelmarius/alerta-anm-ha",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "requirements": ["requests"],
   "codeowners": ["@aurelmarius"],
   "iot_class": "cloud_polling",
