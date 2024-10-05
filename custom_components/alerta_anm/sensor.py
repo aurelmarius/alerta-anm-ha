@@ -10,16 +10,21 @@ _LOGGER = logging.getLogger(__name__)
 JSON_URL = "https://www.meteoromania.ro/wp-json/meteoapi/v2/avertizari-generale"
 
 async def async_setup_entry(hass, config_entry, async_add_entities):
-    # Intervalul de actualizare
-    update_interval = config_entry.data.get("update_interval", 10)
+    # Intervalul de actualizare din configurație (în minute)
+    update_interval = timedelta(minutes=config_entry.data.get("update_interval", 10))
 
     sensor = ANMAlertSensor(hass)
 
-    # Creare senzor
+    # Adăugarea senzorului
     async_add_entities([sensor])
 
-    # Actualizare la intervalul configurat
-    async_track_time_interval(hass, sensor.async_update, timedelta(minutes=update_interval))
+    # Definirea funcției de actualizare care se va executa la intervalul definit
+    async def update_sensor(now):
+        _LOGGER.debug("Se execută actualizarea senzorului la intervalul setat.")
+        await sensor.async_update()
+
+    # Programarea actualizării la intervalele setate
+    async_track_time_interval(hass, update_sensor, update_interval)
 
 class ANMAlertSensor(Entity):
     def __init__(self, hass):
@@ -59,31 +64,37 @@ class ANMAlertSensor(Entity):
                                 "friendly_name": "Avertizări Meteo ANM"
                             }
                             return
-                        
+
                         toate_avertizarile = []
-                        for avertizare in data.get('avertizare', []):
-                            if isinstance(avertizare, dict):
-                                for judet in avertizare.get('judet', []):
-                                    if isinstance(judet, dict):
-                                        try:
-                                            avertizare_judet = {
-                                                "judet": judet.get('@attributes', {}).get('cod', 'necunoscut'),
-                                                "culoare": judet.get('@attributes', {}).get('culoare', 'necunoscut'),
-                                                "fenomene_vizate": avertizare.get('@attributes', {}).get('fenomeneVizate', 'necunoscut'),
-                                                "data_expirarii": avertizare.get('@attributes', {}).get('dataExpirarii', 'necunoscut'),
-                                                "data_aparitiei": avertizare.get('@attributes', {}).get('dataAparitiei', 'necunoscut'),
-                                                "intervalul": avertizare.get('@attributes', {}).get('intervalul', 'necunoscut'),
-                                                "mesaj": avertizare.get('@attributes', {}).get('mesaj', 'necunoscut')
-                                            }
-                                            toate_avertizarile.append(avertizare_judet)
-                                        except KeyError as e:
-                                            _LOGGER.error(f"Eroare la procesarea datelor pentru județ: {e}")
-                                    else:
-                                        _LOGGER.error("Judete nu este un dicționar, s-a primit: %s", type(judet))
-                                        _LOGGER.debug("Conținut judet: %s", judet)
-                            else:
-                                _LOGGER.error("Avertizare nu este un dicționar, s-a primit: %s", type(avertizare))
-                                _LOGGER.debug("Conținut avertizare: %s", avertizare)
+
+                        avertizare = data.get('avertizare', None)
+                        if isinstance(avertizare, dict):
+                            avertizare = [avertizare]
+
+                        if isinstance(avertizare, list):
+                            for avertizare_item in avertizare:
+                                if isinstance(avertizare_item, dict):
+                                    for judet in avertizare_item.get('judet', []):
+                                        if isinstance(judet, dict):
+                                            try:
+                                                avertizare_judet = {
+                                                    "judet": judet.get('@attributes', {}).get('cod', 'necunoscut'),
+                                                    "culoare": judet.get('@attributes', {}).get('culoare', 'necunoscut'),
+                                                    "fenomene_vizate": avertizare_item.get('@attributes', {}).get('fenomeneVizate', 'necunoscut'),
+                                                    "data_expirarii": avertizare_item.get('@attributes', {}).get('dataExpirarii', 'necunoscut'),
+                                                    "data_aparitiei": avertizare_item.get('@attributes', {}).get('dataAparitiei', 'necunoscut'),
+                                                    "intervalul": avertizare_item.get('@attributes', {}).get('intervalul', 'necunoscut'),
+                                                    "mesaj": avertizare_item.get('@attributes', {}).get('mesaj', 'necunoscut')
+                                                }
+                                                toate_avertizarile.append(avertizare_judet)
+                                            except KeyError as e:
+                                                _LOGGER.error(f"Eroare la procesarea datelor pentru județ: {e}")
+                                        else:
+                                            _LOGGER.error("Judete nu este un dicționar, s-a primit: %s", type(judet))
+                                else:
+                                    _LOGGER.error("Avertizare nu este un dicționar, s-a primit: %s", type(avertizare_item))
+                        else:
+                            _LOGGER.error("Avertizare nu este un dicționar sau o listă validă, s-a primit: %s", type(avertizare))
                         
                         if toate_avertizarile:
                             self._state = "active"
