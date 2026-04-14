@@ -1,5 +1,8 @@
 # Atentionare meteorologica ANM Home Assistant
 
+ACEASTA INTEGRARE NU MAI ESTE DEZVOLTATA SI A FOST INLOCUITA DE: https://github.com/aurelmarius/avertizare-anm-ha
+
+
 1. Despre
 
 Integrarea foloseste API ANM de pe site-ul https://www.meteoromania.ro/ pentru a prelua atentionarile meteorologice si le stocheaza in senzorul sensor.avertizari_meteo_anm. Datele sunt stocate ca si atribut al senzorului.
